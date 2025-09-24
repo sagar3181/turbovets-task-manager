@@ -9,20 +9,33 @@ const roleRank: Record<Role, number> = {
   viewer: 1,
 };
 
+interface UserPayload {
+  id: number;
+  role: Role;
+  organizationId: number;
+}
+
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
     ]);
-    if (!required || required.length === 0) return true;
 
-    const req = ctx.switchToHttp().getRequest();
-    const user = req.user as { role: Role; organizationId: number; id: number };
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true;
+    }
 
-    return required.some((r) => roleRank[user.role] >= roleRank[r]);
+    const request = ctx.switchToHttp().getRequest();
+    const user: UserPayload | undefined = request.user;
+
+    if (!user) {
+      return false; // No user, no access
+    }
+
+    return requiredRoles.some((role) => roleRank[user.role] >= roleRank[role]);
   }
 }
