@@ -11,13 +11,34 @@ type UserCtx = { id: number; role: Role; organizationId: number };
 export class TasksService {
   constructor(@InjectRepository(Task) private readonly tasks: Repository<Task>) {}
 
+  /** simple helper to keep audit logs consistent */
+  private audit(action: string, user: UserCtx, task: Task) {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[audit] ${action} by user=${user.id} (role=${user.role}, org=${user.organizationId}) on task=${task.id}`
+    );
+  }
+
   async list(user: UserCtx) {
-    if (user.role === 'owner') return this.tasks.find();
-    return this.tasks.find({ where: { organization: { id: user.organizationId } } });
+    if (user.role === 'owner') {
+      return this.tasks.find({ relations: ['organization', 'createdBy'] });
+    }
+    if (user.role === 'admin') {
+      return this.tasks.find({
+        where: { organization: { id: user.organizationId } },
+        relations: ['organization', 'createdBy'],
+      });
+    }
+    // viewer — only own tasks
+    return this.tasks.find({
+      where: { createdBy: { id: user.id } },
+      relations: ['organization', 'createdBy'],
+    });
   }
 
   async create(user: UserCtx, dto: CreateTaskDto) {
     if (user.role === 'viewer') throw new ForbiddenException('Insufficient role');
+
     const t = this.tasks.create({
       title: dto.title,
       description: dto.description,
@@ -26,11 +47,17 @@ export class TasksService {
       createdBy: { id: user.id } as any,
       organization: { id: user.organizationId } as any,
     });
-    return this.tasks.save(t);
+
+    const saved = await this.tasks.save(t);
+    this.audit('CREATE', user, saved);
+    return saved;
   }
 
   async update(user: UserCtx, id: number, dto: UpdateTaskDto) {
-    const task = await this.tasks.findOne({ where: { id } });
+    const task = await this.tasks.findOne({
+      where: { id },
+      relations: ['organization', 'createdBy'],
+    });
     if (!task) throw new NotFoundException('Task not found');
 
     const sameOrg = task.organization?.id === user.organizationId;
@@ -43,11 +70,16 @@ export class TasksService {
     }
 
     Object.assign(task, dto);
-    return this.tasks.save(task);
+    const updated = await this.tasks.save(task);
+    this.audit('UPDATE', user, updated);
+    return updated;
   }
 
   async remove(user: UserCtx, id: number) {
-    const task = await this.tasks.findOne({ where: { id } });
+    const task = await this.tasks.findOne({
+      where: { id },
+      relations: ['organization', 'createdBy'],
+    });
     if (!task) throw new NotFoundException('Task not found');
 
     const sameOrg = task.organization?.id === user.organizationId;
@@ -55,6 +87,7 @@ export class TasksService {
     if (!canDelete) throw new ForbiddenException('No permission to delete');
 
     await this.tasks.remove(task);
+    this.audit('DELETE', user, task);
     return { deleted: true };
   }
 }

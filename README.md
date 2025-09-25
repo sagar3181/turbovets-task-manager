@@ -310,3 +310,107 @@ Every piece matches the PDF’s requirement: secure, scalable, multi-tenant RBAC
 Backend can boot, seed, authenticate, and manage tasks.
 
 Next steps will be audit logging + Angular frontend.
+
+PR #3 — Org Scoping (Step 6) + Audit Logs (Step 7)
+🎯 Summary
+
+This PR finalizes the backend security model by:
+
+Enforcing organization-level scoping on tasks so users can only act within their permissions.
+
+Adding audit logging for every task create, update, and delete action.
+
+Together, these changes deliver the secure, scalable RBAC enforcement that the challenge PDF emphasizes.
+
+🛠 What was added
+1) Org Scoping in TasksService
+
+Owner: Can see all tasks across all organizations.
+
+Admin: Restricted to tasks within their own organization.
+
+Viewer: Can only see and update tasks they personally created.
+
+Example from list():
+
+if (user.role === 'owner') return this.tasks.find();
+if (user.role === 'admin') return this.tasks.find({ where: { organization: { id: user.organizationId } } });
+return this.tasks.find({ where: { createdBy: { id: user.id } } });
+
+2) Audit Logging
+
+Added a simple audit() helper inside TasksService.
+
+Logs every CREATE, UPDATE, and DELETE action with:
+
+user id
+
+role
+
+organization id
+
+task id
+
+Example log:
+
+[audit] CREATE by user=2 (role=admin, org=4) on task=7
+
+⚠️ Problems We Faced & Fixes
+
+Unauthorized 401s during testing
+
+Cause: forgot to replace <TOKEN> with the real JWT in curl requests.
+
+Fix: used the full access_token from /auth/login in the Authorization: Bearer ... header.
+
+email not on UserCtx type
+
+Cause: tried to log user.email in audit, but UserCtx didn’t have it.
+
+Fix: removed email logging (only log id, role, org). Future improvement: extend UserCtx if email needed.
+
+UpdateQueryBuilder error (“update values missing”)
+
+Cause: seeding was trying to save parent/child orgs in one go.
+
+Fix: saved HQ org first, then saved Clinic org with parent: hq.
+
+✅ Why This Matters
+
+Security by design: Every action (list/create/update/delete) is scoped to role + org.
+
+Accountability: Audit logs provide a clear trail of who did what, and when.
+
+Scalability: Role precedence and org checks are centralized in one service → future changes are easy.
+
+Challenge alignment: This directly satisfies the PDF’s focus on RBAC + auditability.
+
+🔍 How to Test
+# Login as admin
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@tv.com","password":"admin123"}'
+
+# Use the returned access_token
+TOKEN=<paste_token_here>
+
+# Create a task (admin/owner allowed)
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"First Task","description":"RBAC works","category":"Work"}'
+
+# Viewer tries to create (should fail)
+
+
+You’ll see [audit] ... logs in the API console when actions succeed.
+
+🚀 Outcome
+
+With this PR:
+
+Backend RBAC is complete — org-aware, role-aware, and audit-logged.
+
+The system is now secure enough to expose endpoints to the Angular frontend.
+
+Next step: build the Dashboard UI to interact with these APIs.
