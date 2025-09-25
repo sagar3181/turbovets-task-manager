@@ -130,3 +130,183 @@ Expected: ✅ All succeed (auth lint now passes).
 
 Outcome
 This PR delivers a solid foundation (shared contracts + RBAC) and demonstrates handling of real-world CI/lint issues by fixing dependency declarations. With this groundwork in place, subsequent PRs (Entities, JWT Auth, Task CRUD, Audit, Angular UI) can build securely and consistently on top.
+
+
+PR 2 — Entities, Seeding, and Tasks API
+
+This README explains Steps 3, 4, and 5 of the challenge.
+We built the core backend foundation: database entities, user seeding, and a secure tasks API.
+
+Step 3: Entities (The Building Blocks)
+
+Think of entities like shapes in a Lego box.
+You need the shapes first before you can build a castle.
+In our app, the shapes are:
+
+User → A person using the system.
+
+Organization → A group (like "TurboVets HQ" or a "Clinic").
+
+Task → A job to be done (like “Check patient” or “Clean cage”).
+
+What we did
+
+Created User, Organization, and Task classes inside api/src/entities.
+
+Used TypeORM decorators (@Entity, @Column, @ManyToOne, etc.) so PostgreSQL knows how to store them.
+
+Set up relationships:
+
+A User belongs to one Organization.
+
+A Task belongs to an Organization and has a creator (User).
+
+An Organization can have a parent (HQ → Clinic A).
+
+Problem we hit
+
+At first, TypeORM complained about missing parent or wrong imports.
+
+We fixed imports to always use relative paths (./task.entity instead of ../entities/task.entity) and ensured Organization had a parent relation defined.
+
+Step 4: Users + Seeding (Filling the Box with Lego Men)
+
+If entities are the Lego shapes, we now need to add people inside the box.
+Otherwise, the app has no users and no one can log in.
+
+What we did
+
+Added a UsersService with a seed() method.
+
+On app startup, it checks: “Do I already have users?”
+
+If yes → Do nothing.
+
+If no → Create default data.
+
+We created:
+
+Organization TurboVets HQ.
+
+Organization Clinic A with parent HQ.
+
+3 users:
+
+Owner (owner@tv.com / owner123)
+
+Admin (admin@tv.com / admin123)
+
+Viewer (viewer@tv.com / viewer123)
+
+Passwords are hashed with bcrypt before saving.
+
+Problem we hit
+
+Got errors like UpdateValuesMissingError because TypeORM didn’t like how we created/saved orgs.
+
+Solved by saving hq first, then creating clinic with parent: hq, then saving it separately.
+
+This way, parent → child relation is properly respected.
+
+Step 5: Tasks API (Letting Lego Men Do Work)
+
+Now the users (Lego men) needed something to do → Tasks.
+
+What we did
+
+Created a TasksModule, TasksService, and TasksController.
+
+Endpoints:
+
+POST /tasks → create a task
+
+GET /tasks → list tasks
+
+PATCH /tasks/:id → update a task
+
+DELETE /tasks/:id → delete a task
+
+Protected them with JWT + RBAC:
+
+Owner → can do everything.
+
+Admin → can manage tasks in their org.
+
+Viewer → can only update their own tasks.
+
+Problem we hit
+
+First, NestJS couldn’t connect to PostgreSQL (role "postgres" does not exist).
+
+Solution:
+
+Installed PostgreSQL via brew.
+
+Created the role:
+
+CREATE ROLE postgres WITH LOGIN SUPERUSER PASSWORD 'postgres';
+
+
+Created the database:
+
+CREATE DATABASE turbovets OWNER postgres;
+
+
+After this, NestJS booted and auto-ran the seed() successfully.
+
+Verified logs:
+
+[seed] Users ready: owner@tv.com/owner123, admin@tv.com/admin123, viewer@tv.com/viewer123
+
+Testing the Flow
+
+Login with a seeded user:
+
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@tv.com","password":"admin123"}'
+
+
+→ Gets you an access_token.
+
+Create a Task (admin/owner only):
+
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"First Task","description":"RBAC works","category":"Work"}'
+
+
+List Tasks:
+
+curl -H "Authorization: Bearer <TOKEN>" http://localhost:3000/api/tasks
+
+
+Update Task (viewer can only update their own):
+
+curl -X PATCH http://localhost:3000/api/tasks/1 \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"in_progress"}'
+
+
+Delete Task (admin/owner allowed):
+
+curl -X DELETE http://localhost:3000/api/tasks/1 \
+  -H "Authorization: Bearer <TOKEN>"
+
+Why This Matters (Tying Back to the PDF)
+
+Entities give us a clean database model.
+
+Seeding ensures the app is immediately testable (no manual inserts).
+
+Tasks API proves RBAC rules are real and enforced, not just theory.
+
+Every piece matches the PDF’s requirement: secure, scalable, multi-tenant RBAC app.
+
+✅ With Steps 3, 4, and 5 complete:
+
+Backend can boot, seed, authenticate, and manage tasks.
+
+Next steps will be audit logging + Angular frontend.
