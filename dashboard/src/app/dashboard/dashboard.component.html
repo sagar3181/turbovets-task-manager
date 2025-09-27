@@ -1,19 +1,55 @@
-<h2>Welcome to the Dashboard 🎉</h2>
-<p>You are now logged in.</p>
+<div class="dashboard-container">
+  <h2>Welcome to the Dashboard 🎉</h2>
+  <p class="subtitle">You are now logged in.</p>
 
-<!-- Create Task Form -->
-<h3>Create Task</h3>
-<form (ngSubmit)="createTask()">
-  <input [(ngModel)]="newTask.title" name="title" placeholder="Title" required />
-  <input [(ngModel)]="newTask.description" name="description" placeholder="Description" required />
-  <input [(ngModel)]="newTask.category" name="category" placeholder="Category" />
-  <button type="submit">Add Task</button>
-</form>
+  <!-- Create Task Form -->
+  <div class="card create-task">
+    <h3>Create Task</h3>
+    <div class="form-row">
+      <input [(ngModel)]="newTask.title" placeholder="Title" />
+      <input [(ngModel)]="newTask.description" placeholder="Description" />
+      <select [(ngModel)]="newTask.category">
+        <option>Work</option>
+        <option>Personal</option>
+      </select>
+      <button class="btn primary" (click)="createTask()">➕ Add Task</button>
+    </div>
+  </div>
 
-<!-- Task List -->
-<h3>Your Tasks</h3>
-<ul>
-  <li *ngFor="let task of tasks">
-    <b>{{ task.title }}</b> - {{ task.description }} ({{ task.status }})
-  </li>
-</ul>
+  <!-- Error -->
+  <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+  <!-- Task List -->
+  <div class="card task-list">
+    <h3>Your Tasks</h3>
+    <ul cdkDropList (cdkDropListDropped)="drop($event)">
+      <li *ngFor="let task of tasks" cdkDrag>
+        <div *ngIf="editingTaskId !== task.id" class="task-item">
+          <div>
+            <strong>{{ task.title }}</strong>
+            <span class="desc">- {{ task.description }}</span>
+            <span class="tag">{{ task.category }}</span>
+            <span class="status">({{ task.status }})</span>
+          </div>
+          <div class="actions">
+            <button class="btn edit" (click)="startEdit(task)">✏️ Edit</button>
+            <button class="btn delete" (click)="deleteTask(task.id)">🗑 Delete</button>
+          </div>
+        </div>
+
+        <div *ngIf="editingTaskId === task.id" class="task-item editing">
+          <input [(ngModel)]="editedTask.title" placeholder="Title" />
+          <input [(ngModel)]="editedTask.description" placeholder="Description" />
+          <select [(ngModel)]="editedTask.category">
+            <option>Work</option>
+            <option>Personal</option>
+          </select>
+          <div class="actions">
+            <button class="btn primary" (click)="saveEdit()">💾 Save</button>
+            <button class="btn cancel" (click)="cancelEdit()">❌ Cancel</button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>

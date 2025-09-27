@@ -1,0 +1,145 @@
+.dashboard-container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 0 15px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.subtitle {
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+input,
+select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  flex: 1;
+  min-width: 120px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #eee;
+  flex-wrap: wrap;
+}
+
+.task-item.editing {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.desc {
+  color: #666;
+}
+
+.tag {
+  background: #007bff;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.8em;
+  margin-left: 8px;
+}
+
+.status {
+  font-size: 0.85em;
+  color: #888;
+  margin-left: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s ease-in-out;
+  white-space: nowrap;
+}
+
+.btn.primary {
+  background: #28a745;
+  color: white;
+}
+
+.btn.edit {
+  background: #ffc107;
+  color: black;
+}
+
+.btn.delete {
+  background: #dc3545;
+  color: white;
+}
+
+.btn.cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.error {
+  color: red;
+  margin: 10px 0;
+}
+
+/* 📱 Mobile responsiveness */
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  input,
+  select,
+  button {
+    width: 100%;
+  }
+
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

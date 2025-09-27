@@ -12,7 +12,7 @@ export class TasksService {
   constructor(@InjectRepository(Task) private readonly tasks: Repository<Task>) {}
 
   /** simple helper to keep audit logs consistent */
-  private audit(action: string, user: UserCtx, task: Task) {
+  private audit(action: string, user: UserCtx, task: Task | { id: number }) {
     console.log(
       `[audit] ${action} by user=${user.id} (role=${user.role}, org=${user.organizationId}) on task=${task.id}`
     );
@@ -72,5 +72,26 @@ export class TasksService {
     const updated = await this.tasks.save(task);
     this.audit('UPDATE', user, updated);
     return updated;
+  }
+
+  async delete(user: UserCtx, id: number) {
+    const task = await this.tasks.findOne({
+      where: { id },
+      relations: ['organization', 'createdBy'],
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const sameOrg = task.organization?.id === user.organizationId;
+    const isOwner = user.role === 'owner';
+    const isAdminSameOrg = user.role === 'admin' && sameOrg;
+    const isViewerOwn = user.role === 'viewer' && task.createdBy?.id === user.id;
+
+    if (!(isOwner || isAdminSameOrg || isViewerOwn)) {
+      throw new ForbiddenException('No permission to delete');
+    }
+
+    await this.tasks.remove(task);
+    this.audit('DELETE', user, { id });
+    return { deleted: true, id };
   }
 }
