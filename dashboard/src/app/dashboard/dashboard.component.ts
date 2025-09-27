@@ -69,7 +69,7 @@ export class DashboardComponent implements OnInit {
 
   saveEdit() {
     const token = localStorage.getItem('token');
-    if (!token || !this.editedTask) return;
+    if (!token || !this.editedTask) return; 
 
     this.http.put(`/api/tasks/${this.editedTask.id}`, this.editedTask, {
       headers: { Authorization: `Bearer ${token}` },
