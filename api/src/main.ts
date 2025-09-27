@@ -13,7 +13,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const corsOptions: CorsOptions = {
-    origin: 'http://localhost:4200', // Angular frontend
+    origin: ['http://localhost:4200','https://turbovets-dashboard.vercel.app'], // Angular frontend
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: ['Content-Type', 'Authorization'], // ✅ needed for preflight
     credentials: true,
