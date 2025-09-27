@@ -1,37 +1,26 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles, RolesGuard, GetUser } from '@turbovets-task-manager/auth';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';  // ✅ make sure this exists
 import type { CreateTaskDto, UpdateTaskDto } from '@turbovets-task-manager/data';
 
 @Controller('tasks')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)   // 🔒 protect all routes with JWT
 export class TasksController {
-  constructor(private readonly tasks: TasksService) {}
+  constructor(private readonly tasksService: TasksService) {}
 
   @Get()
-  async list(@GetUser() user: any) {
-    console.log(`[AUDIT] list tasks by ${user.email} (${user.role})`);
-    return this.tasks.list(user);
+  listTasks(@Req() req: any) {
+    return this.tasksService.list(req.user);   // ✅ req.user comes from JWT
   }
 
   @Post()
-  @Roles('admin', 'owner')
-  async create(@GetUser() user: any, @Body() dto: CreateTaskDto) {
-    console.log(`[AUDIT] create task by ${user.email}`);
-    return this.tasks.create(user, dto);
+  createTask(@Req() req: any, @Body() dto: CreateTaskDto) {
+  console.log("🔍 User from JWT:", req.user);  // 👀 add this
+  return this.tasksService.create(req.user, dto);
   }
 
-  @Patch(':id')
-  async update(@GetUser() user: any, @Param('id') id: string, @Body() dto: UpdateTaskDto) {
-    console.log(`[AUDIT] update task ${id} by ${user.email}`);
-    return this.tasks.update(user, Number(id), dto);
-  }
-
-  @Delete(':id')
-  @Roles('admin', 'owner')
-  async remove(@GetUser() user: any, @Param('id') id: string) {
-    console.log(`[AUDIT] delete task ${id} by ${user.email}`);
-    return this.tasks.remove(user, Number(id));
+  @Put(':id')
+  updateTask(@Req() req: any, @Param('id') id: number, @Body() dto: UpdateTaskDto) {
+    return this.tasksService.update(req.user, id, dto);
   }
 }

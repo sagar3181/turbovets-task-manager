@@ -9,24 +9,32 @@ import { User } from '../entities/user.entity';
 export class AuthService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
-    private readonly jwt: JwtService,
+    private readonly jwtService: JwtService,   // 👈 renamed to jwtService
   ) {}
 
   async validateUser(email: string, password: string) {
-    const user = await this.users.findOne({ where: { email }, relations: { organization: true } });
+    const user = await this.users.findOne({
+      where: { email },
+      relations: { organization: true },
+    });
     if (!user) throw new UnauthorizedException('Invalid credentials');
+
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
+
     return user;
   }
 
   issueToken(user: User) {
     const payload = {
       sub: user.id,
-      role: user.role,
-      organizationId: user.organization?.id,
       email: user.email,
+      role: user.role,
+      organizationId: user.organization?.id,   // 👈 include org ID
     };
-    return { access_token: this.jwt.sign(payload) };
+
+    return {
+      access_token: this.jwtService.sign(payload),  // 👈 now works
+    };
   }
 }

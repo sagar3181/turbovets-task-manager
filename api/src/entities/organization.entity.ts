@@ -1,25 +1,25 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne } from 'typeorm';
-import { Task } from './task.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
+import { Task } from './task.entity';
 
 @Entity()
 export class Organization {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
-  // self-relation: parent -> children
   @ManyToOne(() => Organization, (org) => org.children, { nullable: true })
-  parent?: Organization;
+  @JoinColumn({ name: 'parentId' })
+  parent?: Organization | null;
 
   @OneToMany(() => Organization, (org) => org.parent)
-  children: Organization[];
+  children!: Organization[];
 
-  @OneToMany(() => User, (user) => user.organization)
-  users: User[];
+  @OneToMany(() => User, (u) => u.organization)
+  users!: User[];
 
-  @OneToMany(() => Task, (task) => task.organization)
-  tasks: Task[];
+  @OneToMany(() => Task, (t) => t.organization)
+  tasks!: Task[];
 }

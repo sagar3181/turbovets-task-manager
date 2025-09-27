@@ -13,7 +13,6 @@ export class TasksService {
 
   /** simple helper to keep audit logs consistent */
   private audit(action: string, user: UserCtx, task: Task) {
-    // eslint-disable-next-line no-console
     console.log(
       `[audit] ${action} by user=${user.id} (role=${user.role}, org=${user.organizationId}) on task=${task.id}`
     );
@@ -73,21 +72,5 @@ export class TasksService {
     const updated = await this.tasks.save(task);
     this.audit('UPDATE', user, updated);
     return updated;
-  }
-
-  async remove(user: UserCtx, id: number) {
-    const task = await this.tasks.findOne({
-      where: { id },
-      relations: ['organization', 'createdBy'],
-    });
-    if (!task) throw new NotFoundException('Task not found');
-
-    const sameOrg = task.organization?.id === user.organizationId;
-    const canDelete = user.role === 'owner' || (user.role === 'admin' && sameOrg);
-    if (!canDelete) throw new ForbiddenException('No permission to delete');
-
-    await this.tasks.remove(task);
-    this.audit('DELETE', user, task);
-    return { deleted: true };
   }
 }

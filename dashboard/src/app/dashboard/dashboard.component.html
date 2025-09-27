@@ -1,0 +1,19 @@
+<h2>Welcome to the Dashboard 🎉</h2>
+<p>You are now logged in.</p>
+
+<!-- Create Task Form -->
+<h3>Create Task</h3>
+<form (ngSubmit)="createTask()">
+  <input [(ngModel)]="newTask.title" name="title" placeholder="Title" required />
+  <input [(ngModel)]="newTask.description" name="description" placeholder="Description" required />
+  <input [(ngModel)]="newTask.category" name="category" placeholder="Category" />
+  <button type="submit">Add Task</button>
+</form>
+
+<!-- Task List -->
+<h3>Your Tasks</h3>
+<ul>
+  <li *ngFor="let task of tasks">
+    <b>{{ task.title }}</b> - {{ task.description }} ({{ task.status }})
+  </li>
+</ul>

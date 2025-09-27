@@ -1,21 +1,26 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Organization } from './organization.entity';
-import type { Role } from '@turbovets-task-manager/data';
+import { Task } from './task.entity';
+
+export type Role = 'owner' | 'admin' | 'viewer';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({ type: 'varchar' })
-  role: Role;
+  role!: Role;
 
-  @ManyToOne(() => Organization, (org) => org.users)
-  organization: Organization;
+  @ManyToOne(() => Organization, (org) => org.users, { nullable: false })
+  organization!: Organization;
+
+  @OneToMany(() => Task, (t) => t.createdBy)
+  tasks!: Task[];
 }
